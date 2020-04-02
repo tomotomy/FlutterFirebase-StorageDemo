@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-
+import 'dataHolder.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -25,7 +25,7 @@ class ImageScreen extends StatelessWidget {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2), 
       itemBuilder: (context, index) {
-        return ImageGridItem(index);
+        return ImageGridItem(index+1);
       }
     );
   }
@@ -61,19 +61,29 @@ class _ImageGridItemState extends State<ImageGridItem> {
   @override
   void initState() {
     super.initState();
-    getImage();
+    if (!imageData.containsKey(widget._index)) {
+      getImage();
+    } else {
+      imageFile = imageData[widget._index];
+    }
   }
 
 
   getImage() {
-    int MAX_SIZE = 7*1024*1024; 
-    photosReference.child("${widget._index}.png").getData(MAX_SIZE).then((data) {
-      this.setState(() {
-        imageFile = data;
-      });
-    }).catchError((error) {
-
-    });
+    if(!requestedIndexes.contains(widget._index)) {
+      int MAX_SIZE = 7*1024*1024; 
+      photosReference.child("${widget._index}.png").getData(MAX_SIZE).then((data) {
+        this.setState(() {
+          imageFile = data;
+        });
+        imageData.putIfAbsent(widget._index, (){
+          return data;
+        });
+      }).catchError((error) {
+        debugPrint(error.toString());
+      }); 
+      requestedIndexes.add(widget._index);
+    }
   }
 
   Widget decideGridGridTileWidget() {
